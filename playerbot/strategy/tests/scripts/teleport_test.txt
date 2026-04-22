@@ -1,0 +1,6 @@
+# Test: Basic Teleport
+# Verifies bot can teleport to a location and report position
+
+teleport Stormwind
+assert distance to Stormwind < 10
+cleanup

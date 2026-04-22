@@ -1,0 +1,57 @@
+# Comprehensive Integration Test
+# Tests all major framework features
+
+# === Setup Phase ===
+teleport Stormwind
+clear mobs radius 100
+set destination Orgrimmar
+
+# === Spawn Support Bots ===
+spawn bot warrior tank at current
+spawn bot priest healer at current
+spawn bot mage dps at current
+form party
+
+# === Give Equipment ===
+give item 1234
+equip item 1234
+
+# === Monitor Setup (checked during observe) ===
+monitor time > 120 => fail "Test timed out after 2 minutes"
+monitor time > 10 => pass "Test ran for sufficient duration"
+monitor hp < 10 => fail "Bot nearly died"
+monitor distance to Orgrimmar < 5 => pass "Reached destination"
+monitor mob 5678 is dead => pass "Target eliminated"
+monitor party wiped => fail "Party was wiped"
+
+# === Observe Phase ===
+# Bot uses normal AI while monitors check conditions
+observe
+
+# === Post-Observation Assertions ===
+assert distance to Orgrimmar < 10
+assert mob 5678 is dead
+assert hp > 20
+assert time < 120
+
+# === Cleanup ===
+despawn bot all
+cleanup
+
+# Expected Result: PASS (if all conditions met)
+# Expected Output:
+# [TEST] Starting test: comprehensive
+# [TEST] Teleported to Stormwind
+# [TEST] Cleared mobs in 100y radius
+# [TEST] Set test destination: Orgrimmar
+# [TEST] Spawned test bot
+# [TEST] Spawned test bot
+# [TEST] Spawned test bot
+# [TEST] Formed test party
+# [TEST] Gave item 1234
+# [TEST] Equipped item 1234
+# [TEST] Entering observe mode - monitoring conditions
+# [TEST] TEST PASSED: Reached destination
+# [TEST] Despawned test bots
+# [TEST] Cleanup complete
+# [TEST] Test PASSED: Reached destination

@@ -1,0 +1,10 @@
+# Test: Navigation
+# Tests bot's ability to navigate to a destination using normal AI
+
+teleport Stormwind
+set destination Orgrimmar
+monitor time > 300 => fail "Navigation timed out"
+monitor distance to Orgrimmar < 10 => pass "Reached destination"
+observe
+assert distance to Orgrimmar < 10
+cleanup

@@ -1,0 +1,15 @@
+# Test: Basic Combat
+# Spawns a dummy target and verifies bot can defeat it
+
+teleport TestArena
+clear mobs radius 50
+spawn bot warrior tank at current
+form party
+monitor time > 60 => fail "Combat took too long"
+monitor mob 1234 is dead => pass "Target defeated"
+monitor hp < 20 => fail "Bot took too much damage"
+observe
+assert mob 1234 is dead
+assert hp > 10
+assert time < 60
+cleanup
