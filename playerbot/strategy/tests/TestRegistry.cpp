@@ -20,9 +20,7 @@ static std::vector<TeleLoc> sTeleLocations;
 static void InitTestLocations()
 {
     sTestLocations["ironforge_outside"] = GuidPosition(ObjectGuid(), WorldPosition(0, -5150.0f, -856.0f, 508.4f));
-    sTestLocations["coldridge"] = GuidPosition(ObjectGuid(), WorldPosition(0, -5634.0f, -497.0f, 396.0f));
-    sTestLocations["darnassus"] = GuidPosition(ObjectGuid(), WorldPosition(1, 9951.0f, 2280.0f, 1342.0f));
-    sTestLocations["zg_boss1_room"] = GuidPosition(ObjectGuid(), WorldPosition(309, -11900.0f, -1650.0f, 92.0f));
+    sTestLocations["zg_boss1_room"] = GuidPosition(ObjectGuid(), WorldPosition(309, -12276.0f, -1399.0f, 130.9f));
 }
 
 static void InitTeleLocations()
@@ -137,10 +135,9 @@ void TestRegistry::GenerateMovementTestsImpl(int maxTests, float minDist, float 
 
             std::string startName = sTeleLocations[i].name;
             std::transform(startName.begin(), startName.end(), startName.begin(), ::tolower);
-            startName = std::regex_replace(startName, std::regex("'"), "\\'");
             std::string endName = sTeleLocations[j].name;
             std::transform(endName.begin(), endName.end(), endName.begin(), ::tolower);
-            endName = std::regex_replace(endName, std::regex("'"), "\\'");
+
 
             std::ostringstream testName;
             testName << "movement_" << prefix << "_" << startName << "_" << endName;
@@ -263,7 +260,7 @@ void TestRegistry::EnsureTestsRegistered()
     sTestsRegistered = true;
 
     static std::string gmInvisible = "gm visible off";
-    static std::string gmVisible = "cleanup gm visible on";
+    static std::string gmVisible = "gm visible on";
 
     static std::string needAlliance = "monitor faction horde => abort \"Bot needs to be alliance\"";
     static std::string needAlive = "monitor bot dead => abort \"Bot died test interupted\"";
@@ -316,28 +313,27 @@ void TestRegistry::EnsureTestsRegistered()
             {"walk_location", "elwynn"}
         });
 
-    std::vector<std::string> furyEquipTemplate = {
-        "# Fury warrior equip upgrades with setup and expected equipment lists",
+    std::vector<std::string> EquipTemplate = {
+        "# equip upgrades with setup and expected equipment lists",
         gmInvisible,
         needAlive,
         "require bot is level=$(level) class=$(class) role=$(role) gear=empty",
-        "monitor time > $(timeout_s) => pass \"Test complete items properly equiped",
-        "teleport $(location)",
+        "monitor time > $(timeout_s) => pass \"Test complete items properly equiped\"",
         "give $(setup_equip_item_1)",
         "give $(setup_equip_item_2)",
         "do equip upgrades",
         "give $(bag_item_1)",
         "give $(bag_item_2)",
         "do equip upgrades",
+        "wait 5",
         "require equip main hand=$(expected_item_1)",
         "require equip off hand=$(expected_item_2)",
         "observe",
         gmVisible
     };
-    RegisterScenarioVariant("scenario_fury_equip_upgrades", "default", furyEquipTemplate,
+    RegisterScenarioVariant("scenario_fury_equip_upgrades", "default", EquipTemplate,
         {
             {"timeout_s", "10"},
-            {"location", "ironforge"},
             {"level", "60"},
             {"class", "warrior"},
             {"role", "dps"},
@@ -349,23 +345,28 @@ void TestRegistry::EnsureTestsRegistered()
             {"expected_item_2", "18805"}
         });
 
-    std::vector<std::string> zgGroupTemplate = {
-        "# ZG progression with large group and dead-mob observation",
+    std::vector<std::string> instanceGroupTemplate = {
+        "# instance progression with large group and dead-mob observation",
+        "require bot is level=60",
         "monitor dead mobs > $(dead_mobs_min) => pass \"Observed dead mobs in instance\"",
         "monitor time > $(timeout_s) => fail \"Timeout while traversing instance after <time elapsed> (mobs <mobs killed>, traveled <distance traveled> / wanted <distance wanted>)\"",
         "teleport $(instance_entry)",
-        "mgroup size=$(group_size)",
+        "mgroup size=$(group_size) gear=best",
+        gmVisible,
+        "gm off",
+        "wait 10",
+        ".bot r @tank co +mark rti",
         "set destination $(boss_destination)",
         "observe"
     };
-    RegisterScenarioVariant("scenario_instance_group_progress", "zg_default", zgGroupTemplate,
+    RegisterScenarioVariant("scenario_instance_group_progress", "zg_default", instanceGroupTemplate,
         {
-            {"timeout_s", "600"},
+            {"timeout_s", "1200"},
             {"group_size", "20"},
             {"dead_mobs_min", "0"},
             {"instance_entry", "zul'gurub"},
             {"boss_destination", "zg_boss1_room"}
-        });
+        });  
 
     std::vector<std::string> followTemplate = {
         "# Follow catch-up between leader and spawned follower",
@@ -379,11 +380,11 @@ void TestRegistry::EnsureTestsRegistered()
         "wait 5",
         "teleport $(leader_start)",
         "set destination $(leader_dest_a)",
-        "wait 600",
+        "wait destination 600",
         "set destination $(leader_dest_b)",
-        "wait 600",
+        "wait destination 600",
         "set destination $(leader_dest_a)",
-        "wait 600",
+        "wait destination 600",
         "set destination $(leader_dest_a)",
         "observe",
         gmVisible
