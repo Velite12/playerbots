@@ -5472,7 +5472,8 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 			uint32 spellId = entry->Id;
 
 			bool isPositiveSpell = IsPositiveSpell(spellId);
-			if (isPositiveSpell && isFriend)
+            bool IsPositiveAuraEffect = IsPositiveAuraEffect(spellId);
+			if ((isPositiveSpell || IsPositiveAuraEffect) && isFriend)
 				continue;
 
 			if (!isPositiveSpell && !isFriend)
