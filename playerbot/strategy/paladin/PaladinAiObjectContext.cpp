@@ -25,7 +25,13 @@ namespace ai
 #ifdef MANGOSBOT_TWO
                 creators["pull"] = [](PlayerbotAI* ai) { return new PullStrategy(ai, "judgement of light", "seal of righteousness"); };
 #else
-                creators["pull"] = [](PlayerbotAI* ai) { return new PullStrategy(ai, "judgement", "seal of righteousness"); };
+                creators["pull"] = [](PlayerbotAI* ai) { 
+                    if (ai->HasSpell(31935))
+                        return new PullStrategy(ai, "avenger's shield", "seal of righteousness"); 
+                    else
+                        return new PullStrategy(ai, "judgement", "seal of righteousness"); 
+                };
+
 #endif
             }
         };
