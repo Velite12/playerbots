@@ -78,6 +78,7 @@
 #include "QuestValues.h"
 #include "BudgetValues.h"
 #include "MaintenanceValues.h"
+#include "BankValues.h"
 #include "GroupValues.h"
 #include "GuildValues.h"
 #include "TradeValues.h"
@@ -209,8 +210,10 @@ namespace ai
             creators["behind"] = [](PlayerbotAI* ai) { return new IsBehindValue(ai); };
             creators["facing"] = [](PlayerbotAI* ai) { return new IsFacingValue(ai); };
 
-            creators["item count"] = [](PlayerbotAI* ai) { return new ItemCountValue(ai); };
+            creators["item count"] = [](PlayerbotAI* ai) { return new ItemCountValue(ai); };           
             creators["inventory items"] = [](PlayerbotAI* ai) { return new InventoryItemValue(ai); };
+            creators["bank item count"] = [](PlayerbotAI* ai) { return new BankItemCountValue(ai); };
+            creators["bank items"] = [](PlayerbotAI* ai) { return new BankItemValue(ai); };
             creators["inventory item ids"] = [](PlayerbotAI* ai) { return new InventoryItemIdValue(ai); };
             creators["trinkets on use"] = [](PlayerbotAI* ai) { return new EquipedUsableTrinketValue(ai); };
 
@@ -253,6 +256,7 @@ namespace ai
             creators["combat"] = [](PlayerbotAI* ai) { return new IsInCombatValue(ai); };
             creators["lfg proposal"] = [](PlayerbotAI* ai) { return new LfgProposalValue(ai); };
             creators["bag space"] = [](PlayerbotAI* ai) { return new BagSpaceValue(ai); };
+            creators["bank space"] = [](PlayerbotAI* ai) { return new BankSpaceValue(ai); };
             creators["durability"] = [](PlayerbotAI* ai) { return new DurabilityValue(ai); };
             creators["durability inventory"] = [](PlayerbotAI* ai) { return new DurabilityInventoryValue(ai); };
             creators["lowest durability"] = [](PlayerbotAI* ai) { return new LowestDurabilityValue(ai); };
@@ -351,6 +355,12 @@ namespace ai
             creators["should ah sell"] = [](PlayerbotAI* ai) { return new ShouldAHSellValue(ai); };
             creators["can ah sell"] = [](PlayerbotAI* ai) { return new CanAHSellValue(ai); };
             creators["can ah buy"] = [](PlayerbotAI* ai) { return new CanAHBuyValue(ai); };
+            creators["should bank deposit"] = [](PlayerbotAI* ai) { return new ShouldBankDepositValue(ai); };
+            creators["should bank withdraw"] = [](PlayerbotAI* ai) { return new ShouldBankWithdrawValue(ai); };
+#ifndef MANGOSBOT_ZERO
+            creators["should guild bank deposit"] = [](PlayerbotAI* ai) { return new ShouldGuildBankDepositValue(ai); };
+            creators["should guild bank withdraw"] = [](PlayerbotAI* ai) { return new ShouldGuildBankWithdrawValue(ai); };
+#endif
             creators["can get mail"] = [](PlayerbotAI* ai) { return new CanGetMailValue(ai); };
             creators["should get mail"] = [](PlayerbotAI* ai) { return new ShouldGetMailValue(ai); };
             creators["can fight equal"] = [](PlayerbotAI* ai) { return new CanFightEqualValue(ai); };
@@ -385,6 +395,8 @@ namespace ai
             creators["group and"] = [](PlayerbotAI* ai) { return new GroupBoolANDValue(ai); };
             creators["group or"] = [](PlayerbotAI* ai) { return new GroupBoolORValue(ai); };
             creators["group ready"] = [](PlayerbotAI* ai) { return new GroupReadyValue(ai); };
+
+            creators["closest entry"] = [](PlayerbotAI* ai) { return new ClosestEntryValue(ai); };
 
             creators["petition signs"] = [](PlayerbotAI* ai) { return new PetitionSignsValue(ai); };
             creators["can hand in petition"] = [](PlayerbotAI* ai) { return new CanHandInPetitionValue(ai); };

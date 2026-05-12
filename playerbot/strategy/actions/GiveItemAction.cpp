@@ -34,7 +34,13 @@ bool GiveItemAction::Execute(Event& event)
             continue;
 
         ItemPosCountVec dest;
+#ifdef MANGOSBOT_TWO
+        uint8 bagSlot;
+        InventoryResult msg = receiver->CanStoreItem(NULL_BAG, NULL_SLOT, dest, item, bagSlot, false);
+#else
         InventoryResult msg = receiver->CanStoreItem(NULL_BAG, NULL_SLOT, dest, item, false);
+#endif
+
         if (msg == EQUIP_ERR_OK)
         {
             bot->MoveItemFromInventory(item->GetBagSlot(), item->GetSlot(), true);
