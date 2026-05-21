@@ -502,7 +502,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         else
             bot->GetPlayerbotAI()->SetPlayerFriend(false);
 
-        if (sPlayerbotAIConfig.instantRandomize && !sPlayerbotAIConfig.disableRandomLevels && !bot->GetTotalPlayedTime())
+        if (sPlayerbotAIConfig.instantRandomize && !sPlayerbotAIConfig.disableRandomLevels && !bot->GetTotalPlayedTime() && !sPlayerbotAIConfig.IsFreeAltBot(bot))
         {
             sRandomPlayerbotMgr.InstaRandomize(bot);
         }
@@ -602,7 +602,20 @@ bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* handler, char const* a
 
     for (std::list<std::string>::iterator i = messages.begin(); i != messages.end(); ++i)
     {
-        handler->PSendSysMessage("%s",i->c_str());
+        WorldSession* activeSession = handler->GetSession();
+        if (!activeSession || !activeSession->GetPlayer())
+            break;
+
+        try
+        {
+            handler->PSendSysMessage("%s", i->c_str());
+        }
+        catch (...)
+        {
+            // RA/client can disconnect while a long response is being streamed.
+            // Stop sending remaining lines instead of risking a server-side crash.
+            break;
+        }
     }
 
     return true;
@@ -2177,14 +2190,29 @@ std::list<std::string> PlayerbotHolder::HandleGroup(Player* master, const std::s
 std::list<std::string> PlayerbotHolder::HandleRunTest(Player* master, const std::string param, AccountTypes security)
 {    
     std::list<std::string> messages;
+    static constexpr size_t maxListLines = 200;
 
     if (param.empty())
     {
         messages.push_back("Usage: .rndbot runtest <testnamepart> [count]");
         messages.push_back("Available tests:");
         std::vector<std::string> availableTests = TestRegistry::GetAvailableTests();
+        size_t shown = 0;
         for (const auto& test : availableTests)
+        {
+            if (shown >= maxListLines)
+                break;
             messages.push_back("  " + test);
+            ++shown;
+        }
+
+        if (availableTests.size() > shown)
+        {
+            std::ostringstream out;
+            out << "... " << (availableTests.size() - shown) << " more tests not shown. Use '.rndbot runtest ?<namepart> [count]' to narrow results.";
+            messages.push_back(out.str());
+        }
+
         return messages;
     }
 
@@ -2245,12 +2273,16 @@ std::list<std::string> PlayerbotHolder::HandleRunTest(Player* master, const std:
     {
         std::string lowerTest = test;
         std::transform(lowerTest.begin(), lowerTest.end(), lowerTest.begin(), ::tolower);
-        if (lowerTest.find(testNamePart) != std::string::npos || testNamePart == "*")
+        if (lowerTest.find(testNamePart) == 0 || testNamePart == "*")
         {
             matchingTests.push_back(test);
-            if (maxTests && matchingTests.size() >= maxTests)
-                break;
         }
+    }
+
+    if (maxTests && matchingTests.size() > maxTests)
+    {
+        std::shuffle(matchingTests.begin(), matchingTests.end(), *GetRandomGenerator());
+        matchingTests.resize(maxTests);
     }
 
     if (matchingTests.empty())
@@ -2262,8 +2294,22 @@ std::list<std::string> PlayerbotHolder::HandleRunTest(Player* master, const std:
     if (listTests)
     {
         messages.push_back("Tests matching '" + param + "':");
+        size_t shown = 0;
         for (const auto& test : matchingTests)
+        {
+            if (shown >= maxListLines)
+                break;
             messages.push_back("  " + test);
+            ++shown;
+        }
+
+        if (matchingTests.size() > shown)
+        {
+            std::ostringstream out;
+            out << "... " << (matchingTests.size() - shown) << " more tests not shown. Add [count] to limit, e.g. '.rndbot runtest " << testNamePart << " 20'.";
+            messages.push_back(out.str());
+        }
+
         return messages;
     }
 
