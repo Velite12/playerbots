@@ -13,7 +13,7 @@ namespace ai
         std::string getName() override { return "pull"; }
 
         static PullStrategy* Get(PlayerbotAI* ai);
-        static uint8 GetMaxPullTime() { return 15; }
+        static uint8 GetMaxPullTime() { return 10; }
         const time_t& GetPullStartTime() const { return pullStartTime; }
         
         bool CanDoPullAction(Unit* target);

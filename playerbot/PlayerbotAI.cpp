@@ -3993,7 +3993,7 @@ uint32 PlayerbotAI::GetSpellCastDuration(Spell* spell)
         // fix Feign Death
         if (pSpellInfo->Id == 5384)
         {
-            spellDuration = 1000;
+            spellDuration = 500;
         }
         // fix cannibalize
         else if (pSpellInfo->Id == 20577)
