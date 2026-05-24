@@ -3556,7 +3556,7 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool syncWithMaster, bool
             }
 
             attempts++;
-        } while (!found && attempts < 3 && quality != ITEM_QUALITY_POOR);
+        } while (!found && attempts < 10 && quality != ITEM_QUALITY_POOR);
         if (!found)
         {
             if (slot != EQUIPMENT_SLOT_TRINKET1 && slot != EQUIPMENT_SLOT_TRINKET2)
