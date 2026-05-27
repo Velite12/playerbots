@@ -49,7 +49,7 @@ void ShamanStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 
     triggers.push_back(new TriggerNode(
         "purge",
-        NextAction::array(0, new NextAction("purge", ACTION_DISPEL), NULL)));
+        NextAction::array(0, new NextAction("purge", ACTION_INTERRUPT+1), NULL)));
 }
 
 void ShamanStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -516,6 +516,10 @@ void ShamanStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     ClassStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "purge",
+        NextAction::array(0, new NextAction("purge", ACTION_INTERRUPT+1), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "low health",
         NextAction::array(0, new NextAction("healing wave", ACTION_MEDIUM_HEAL), NULL)));
 
@@ -523,9 +527,7 @@ void ShamanStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "party member low health",
         NextAction::array(0, new NextAction("healing wave on party", ACTION_LIGHT_HEAL), NULL)));
 
-    triggers.push_back(new TriggerNode(
-        "purge",
-        NextAction::array(0, new NextAction("purge", ACTION_DISPEL), NULL)));
+
 }
 
 void ShamanStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

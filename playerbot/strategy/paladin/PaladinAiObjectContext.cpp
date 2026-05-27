@@ -27,7 +27,7 @@ namespace ai
 #else
                 creators["pull"] = [](PlayerbotAI* ai) { 
                     if (ai->HasSpell(31935))
-                        return new PullStrategy(ai, "avenger's shield", "seal of righteousness"); 
+                        return new PullStrategy(ai, "avenger's shield"); 
                     else
                         return new PullStrategy(ai, "judgement", "seal of righteousness"); 
                 };
