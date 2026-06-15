@@ -3992,7 +3992,7 @@ uint32 PlayerbotAI::GetSpellCastDuration(Spell* spell)
         // fix Feign Death
         if (pSpellInfo->Id == 5384)
         {
-            spellDuration = 1000;
+            spellDuration = 500;
         }
         // fix cannibalize
         else if (pSpellInfo->Id == 20577)
@@ -4176,18 +4176,15 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, b
 
         if (!damage)
         {
-            for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
+            bool immune = target->IsImmuneToSpell(spellInfo, false, effectMask, bot);
+            if (immune)
             {
-                bool immune = target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, false);
-                if (immune)
+                if (checkResult)
                 {
-                    if (checkResult)
-                    {
-                        *checkResult = SPELL_FAILED_IMMUNE;
-                    }
-
-                    return false;
+                    *checkResult = SPELL_FAILED_IMMUNE;
                 }
+
+                return false;
             }
         }
 
@@ -4737,7 +4734,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
-        out << "Casting " <<ChatHelper::formatSpell(pSpellInfo);
+        out << "Casting " << ChatHelper::formatSpell(pSpellInfo) << " spellid " << pSpellInfo->Id;
         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
     }
 
@@ -4884,7 +4881,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
-        out << "Casting " << ChatHelper::formatSpell(pSpellInfo);
+        out << "Casting " << ChatHelper::formatSpell(pSpellInfo) << " spellid " << pSpellInfo->Id;
         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
     }
 
@@ -5036,7 +5033,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
-        out << "Casting " << ChatHelper::formatSpell(pSpellInfo);
+        out << "Casting " << ChatHelper::formatSpell(pSpellInfo) << " spellid " << pSpellInfo->Id;
         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
     }
 
@@ -5326,7 +5323,7 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target, float projectil
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
-        out << "Casting Vehicle Spell" << ChatHelper::formatSpell(pSpellInfo);
+        out << "Casting " << ChatHelper::formatSpell(pSpellInfo) << " spellid " << pSpellInfo->Id;
         TellPlayerNoFacing(GetMaster() ? GetMaster() : bot, out);
     }
 
@@ -5442,14 +5439,16 @@ bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, std::string spell, u
 	if (!spellInfo)
 		return false;
 
-	for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
+
+
+	for (uint8 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
 	{
 		if ((spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_COMBAT) && spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
 			return true;
-
-		if ((spellInfo->Effect[i] == SPELL_EFFECT_INTERRUPT_CAST) &&
-			!target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, true))
-			return true;
+        
+        if ((spellInfo->Effect[i] == SPELL_EFFECT_INTERRUPT_CAST) &&
+            !target->IsImmuneToSpell(spellInfo, true, effectMask, bot))
+            return true;
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA) && spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_SILENCE)
             return true;
@@ -6216,16 +6215,20 @@ bool PlayerbotAI::IsOpposing(uint8 race1, uint8 race2)
 
 void PlayerbotAI::RemoveShapeshift()
 {
-    RemoveAura("bear form");
-    RemoveAura("dire bear form");
-    RemoveAura("moonkin form");
-    RemoveAura("travel form");
-    RemoveAura("cat form");
-    RemoveAura("flight form");
-    RemoveAura("swift flight form");
-    RemoveAura("aquatic form");
-    RemoveAura("ghost wolf");
-    RemoveAura("tree of life");
+    if (!bot->HasCharm())
+    {
+        RemoveAura("bear form");
+        RemoveAura("dire bear form");
+        RemoveAura("moonkin form");
+        RemoveAura("travel form");
+        RemoveAura("cat form");
+        RemoveAura("flight form");
+        RemoveAura("swift flight form");
+        RemoveAura("aquatic form");
+        RemoveAura("ghost wolf");
+        RemoveAura("tree of life");
+    }
+
 }
 
 uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBank)
