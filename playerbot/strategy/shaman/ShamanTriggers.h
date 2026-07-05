@@ -15,7 +15,7 @@ namespace ai
     class ReadyToRemoveTotemsTrigger : public Trigger 
     {
     public:
-        ReadyToRemoveTotemsTrigger(PlayerbotAI* ai) : Trigger(ai, "ready to remove totems", 5) {}
+        ReadyToRemoveTotemsTrigger(PlayerbotAI* ai) : Trigger(ai, "ready to remove totems", 10) {}
 
         virtual bool IsActive() override
         {
@@ -46,7 +46,7 @@ namespace ai
             }
             // Avoid removing any of the big cooldown totems.
             return AI_VALUE(bool, "have any totem")
-                && !totemIsNear;
+                && !totemIsNear
                 && !AI_VALUE2(bool, "has totem", "mana tide totem")
                 && !AI_VALUE2(bool, "has totem", "earth elemental totem")
                 && !AI_VALUE2(bool, "has totem", "fire elemental totem");
