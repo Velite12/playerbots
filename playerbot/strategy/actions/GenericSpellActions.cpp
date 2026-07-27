@@ -188,10 +188,6 @@ bool CastSpellAction::isUseful()
             return false;
     }
 
-    // If target is more likely than not to reflect and our spell is reflectable, don't cast
-    if (spellTarget->GetReflectChance(GetSpellSchoolMask(pSpellInfo)) > 50.0f && IsReflectableSpell(pSpellInfo))
-        return false;
-
     return true;
 }
 
