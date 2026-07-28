@@ -213,7 +213,6 @@ bool AttackAction::Attack(Player* requester, Unit* target)
                             bot->AttackStop();
                             return false;
                         }
-                            
 
                         i = vDamageShields.begin();
                     }
