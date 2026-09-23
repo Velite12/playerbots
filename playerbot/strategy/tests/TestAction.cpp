@@ -76,6 +76,7 @@ void TestAction::RegisterCommands()
     commands.push_back(std::make_unique<CommandKillSpawn>());
     commands.push_back(std::make_unique<CommandMoveSpawn>());
     commands.push_back(std::make_unique<CommandEngageSpawn>());
+    commands.push_back(std::make_unique<CommandHideSpawn>());
 }
 
 void TestAction::RegisterMonitors()
@@ -94,6 +95,7 @@ void TestAction::RegisterMonitors()
     monitors.push_back(std::make_unique<MonitorCombatPartyWiped>());
     monitors.push_back(std::make_unique<MonitorStateFaction>());
     monitors.push_back(std::make_unique<MonitorStateGroupSize>());
+    monitors.push_back(std::make_unique<MonitorStateGroupOnMap>());
     monitors.push_back(std::make_unique<MonitorStateLootGuid>());
     monitors.push_back(std::make_unique<MonitorStateStarterGearCount>());
     monitors.push_back(std::make_unique<MonitorStateEquipQuality>());
@@ -109,6 +111,7 @@ void TestAction::RegisterMonitors()
     monitors.push_back(std::make_unique<MonitorHasMount>());
     monitors.push_back(std::make_unique<MonitorSpawnOnMap>());
     monitors.push_back(std::make_unique<MonitorSpawnAlive>());
+    monitors.push_back(std::make_unique<MonitorSpawnResurrected>());
     monitors.push_back(std::make_unique<MonitorSpawnDead>());
 }
 

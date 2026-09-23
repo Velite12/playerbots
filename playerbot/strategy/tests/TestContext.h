@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <set>
 #include <cstdint>
 #include "Globals/ObjectMgr.h"
 #include "playerbot/GuidPosition.h"
@@ -43,6 +44,22 @@ namespace ai
         std::string testName;                    
         WorldPosition testStartPosition;
         GuidPosition destinationPosition;
+
+        // Where the most recent resurrect request told its target to land, and on which map. Monitors
+        // must measure against this rather than the acting bot: the caller is a random bot that can
+        // random-teleport thousands of yards (or into a battleground) while the observe window runs,
+        // which made a proximity check against it report a false failure.
+        uint32 resurrectMapId = 0;
+        float resurrectX = 0.0f;
+        float resurrectY = 0.0f;
+        float resurrectZ = 0.0f;
+        bool hasResurrectRequest = false;
+
+        // Latched by the "group on map" monitor: each member is recorded the first time it is observed on
+        // the bot's map. Per member rather than a single snapshot, because group members are roamed random
+        // bots and are rarely all settled on the same map on the same tick - the monitor asserts that the
+        // delivery happened, not that it held.
+        std::set<ObjectGuid> groupMembersSeenOnMap;
 
         bool debug = false; // enable extra logging for debugging
 

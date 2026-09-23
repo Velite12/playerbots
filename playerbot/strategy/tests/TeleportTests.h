@@ -63,6 +63,20 @@ namespace ai
         std::string GetName() const override { return "engage spawn"; }
     };
 
+    // Gives the test's spawned bot the same protection the acting bot already has. The host runs
+    // with "gm visible off", and Player::SetGMVisible(false) sets GM mode as well as hiding the
+    // player. A spawned bot does not get that, and it inherits the host's team while being placed
+    // where the host stands - so in a hostile capital the guards engage it. The summon is then
+    // either refused (target dead) or silently dropped (HandleSummonResponseOpcode returns early
+    // when the target is in combat). Tests that need a live, unharassed target use "hide spawn".
+    class CommandHideSpawn : public TestCommand
+    {
+    public:
+        TestResult Execute(const std::string& params, Player* bot, PlayerbotAI* ai, TestContext& ctx, std::string& message) override;
+    protected:
+        std::string GetName() const override { return "hide spawn"; }
+    };
+
     // =====================================================
     // Monitors - these assert on the *spawned* bot, not on the acting bot.
     // Every other monitor in the framework looks at the acting bot, which cannot express
@@ -85,8 +99,24 @@ namespace ai
         std::string GetName() const override { return "spawn alive"; }
     };
 
+    // "spawn resurrected <N>" -> the first spawned bot is alive AND the core is still carrying OUR
+    // resurrect request for it AND it is standing within N yards of the acting bot.
+    // "spawn alive" alone is not proof: a dead bot's own AI releases spirit and gets raised at a
+    // spirit healer, so the bot can be alive without our request ever having been accepted - which
+    // silently turns a failed summon into a pass. The resurrect request is the only route that
+    // moves the corpse to the caller before reviving it, so the distance check is what actually
+    // proves the request was accepted and applied.
+    class MonitorSpawnResurrected : public TestMonitor
+    {
+    private:
+        bool IsConditionMet(const std::string& monitorStr, Player* bot, TestContext& ctx) const override;
+        std::string GetName() const override { return "spawn resurrected"; }
+    };
+
     // "spawn dead" -> the first spawned bot is dead. Pair with a time monitor to assert it STAYS
     // dead (BL-22: a summon must not resurrect a corpse).
+    // Note: a resurrect request remains recorded on the player until it next dies, so "spawn dead"
+    // is the only way to assert a corpse was NOT resurrected by us.
     class MonitorSpawnDead : public TestMonitor
     {
     private:

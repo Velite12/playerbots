@@ -35,6 +35,12 @@ namespace
             << " inWorld=" << (target->IsInWorld() ? 1 : 0)
             << " session=" << (target->GetSession() ? 1 : 0)
             << " hp=" << target->GetHealth()
+            << " maxhp=" << target->GetMaxHealth()
+            << " lvl=" << target->GetLevel()
+            << " race=" << target->getRace()
+            << " class=" << target->getClass()
+            << " team=" << uint32(target->GetTeam())
+            << " gm=" << (target->IsGameMaster() ? 1 : 0)
             << " map=" << target->GetMapId();
         return out.str();
     }
@@ -110,7 +116,9 @@ TestResult CommandSummonRequest::Execute(const std::string& params, Player* bot,
     // Expecting a rejection: the in-combat precondition must be forced in THIS tick. A separate
     // "engage spawn" command cannot hold combat across an AI tick - the bot's own AI drops it, so by
     // the time this command runs the target is out of combat again and the request is accepted.
-    if (ExpectsRejection(params) && !target->IsInCombat())
+    // A DEAD target is its own rejection precondition (SendSummonRequest refuses corpses outright),
+    // so combat only needs forcing while the target is alive.
+    if (ExpectsRejection(params) && target->IsAlive() && !target->IsInCombat())
     {
         if (!ForceCombat(target, 299))
         {
@@ -142,6 +150,17 @@ TestResult CommandResurrectRequest::Execute(const std::string& params, Player* b
     bot->GetPosition(x, y, z);
 
     const bool sent = PlayerbotAI::SendResurrectRequest(bot, target, bot->GetMapId(), x, y, z);
+
+    // Remember where we told the corpse to land: the monitor must measure against this, not against
+    // the acting bot, which may random-teleport away long before the resurrect completes.
+    if (sent)
+    {
+        ctx.resurrectMapId = bot->GetMapId();
+        ctx.resurrectX = x;
+        ctx.resurrectY = y;
+        ctx.resurrectZ = z;
+        ctx.hasResurrectRequest = true;
+    }
 
     return RunRequest(params, "resurrect request", sent, DescribeTarget(target), message);
 }
@@ -197,6 +216,19 @@ TestResult CommandMoveSpawn::Execute(const std::string& params, Player* bot, Pla
     sLog.outString("[SUMMON] move spawn: %s -> %s (resolved map %u @ %.1f, %.1f, %.1f); now map=%u inWorld=%d beingTeleported=%d",
         target->GetName(), params.c_str(), mapId, x, y, z,
         target->GetMapId(), target->IsInWorld() ? 1 : 0, target->IsBeingTeleported() ? 1 : 0);
+    return TestResult::PASS;
+}
+
+TestResult CommandHideSpawn::Execute(const std::string& params, Player* bot, PlayerbotAI* ai, TestContext& ctx, std::string& message)
+{
+    Player* target = GetSpawnedBot(ctx);
+    if (!target)
+        return TestResult::PENDING; // still entering the world
+
+    // GM mode is what stops the guards engaging; the combat stop clears anything that already
+    // landed in the tick before this ran.
+    target->SetGMVisible(false);
+    target->CombatStopWithPets(true, true);
     return TestResult::PASS;
 }
 
@@ -272,6 +304,43 @@ bool MonitorSpawnAlive::IsConditionMet(const std::string& monitorStr, Player* bo
     return spawned->IsAlive();
 }
 
+bool MonitorSpawnResurrected::IsConditionMet(const std::string& monitorStr, Player* bot, TestContext& ctx) const
+{
+    Player* spawned = GetSpawnedBot(ctx);
+    if (!spawned)
+        return false;
+
+    const bool requestedBy = spawned->isRessurectRequestedBy(bot->GetObjectGuid());
+
+    // Measure the landing against the position our request specified, never against the acting bot:
+    // the caller is a random bot that can random-teleport thousands of yards (or into a battleground)
+    // while the 120 s observe window runs. The comparison is optional - without one the monitor
+    // asserts only that the corpse was revived onto the map our request named while still carrying
+    // it. Cross-map has to use that weaker form: the target is itself a roaming random bot, so the
+    // manager can teleport it on while the resurrect's far teleport is in flight, and the core then
+    // applies the resurrect wherever that teleport delivered it (Player::ResurrectUsingRequestDataInit
+    // defers to a pending teleport), leaving a correct resurrect at an uncontrollable position.
+    const bool onRequestMap = ctx.hasResurrectRequest && spawned->GetMapId() == ctx.resurrectMapId;
+    const bool alive = spawned->IsAlive();
+
+    std::string valueName;
+    std::string op;
+    std::string valueStr;
+    std::string parseMessage;
+    float threshold = 0.0f;
+    const bool hasThreshold =
+        TryParseComparisonValue(monitorStr, valueName, op, valueStr, parseMessage, GetName()) == TestResult::PASS &&
+        TryParseFloatStrict(valueStr, threshold, parseMessage, GetName()) == TestResult::PASS;
+
+    const float dist = onRequestMap ? spawned->GetDistance(ctx.resurrectX, ctx.resurrectY, ctx.resurrectZ) : -1.0f;
+    const bool closeEnough = !hasThreshold || (onRequestMap && ((op == "<") ? (dist < threshold) : (dist > threshold)));
+
+    if (!alive || !requestedBy)
+        return false;
+
+    return closeEnough;
+}
+
 bool MonitorSpawnDead::IsConditionMet(const std::string& monitorStr, Player* bot, TestContext& ctx) const
 {
     Player* spawned = GetSpawnedBot(ctx);
@@ -301,6 +370,7 @@ void TestRegistry::RegisterTeleportTests()
         "monitor time > 120 => fail \"Timeout: summoned bot never arrived (same map)\"",
         "teleport stormwind",
         "spawn level=60 temporary=1 login=1",
+        "hide spawn",
         "wait 5",
         "teleport elwynn",
         "summon request",
@@ -317,6 +387,7 @@ void TestRegistry::RegisterTeleportTests()
         "monitor time > 120 => fail \"Timeout: summoned bot never crossed maps\"",
         "teleport stormwind",
         "spawn level=60 temporary=1 login=1",
+        "hide spawn",
         "wait 5",
         "teleport orgrimmar",
         "summon request",
@@ -324,14 +395,17 @@ void TestRegistry::RegisterTeleportTests()
         gmVisible
     });
 
-    // BL-16 - dead bot summoned on the same map. Must be resurrected, not merely teleported.
+    // BL-16 - dead bot summoned on the same map. Must be resurrected by our request, not merely
+    // teleported or revived by the bot's own dead strategy (spirit healer), so the monitor requires
+    // the resurrect to have landed the corpse next to the summoner.
     RegisterTest("teleport_summon_dead_same_map", {
         gmInvisible,
         needAlive,
-        "monitor spawn alive => pass \"Summoned corpse resurrected and arrived\"",
+        "monitor spawn resurrected < 30 => pass \"Summoned corpse resurrected next to the summoner (same map)\"",
         "monitor time > 120 => fail \"Timeout: summoned corpse was not resurrected (same map)\"",
         "teleport stormwind",
         "spawn level=60 temporary=1 login=1",
+        "hide spawn",
         "wait 5",
         "teleport elwynn",
         "kill spawn",
@@ -340,14 +414,46 @@ void TestRegistry::RegisterTeleportTests()
         gmVisible
     });
 
+    // BL-22 - the plain summon path must never resurrect a corpse. `PlayerbotAI::SendSummonRequest`
+    // refuses a dead target outright, and the only code that rezzes on this path is the *explicit*
+    // `resurrectPlayer` branch of `SummonAction::Teleport` (covered by BL-16/BL-17). So a summon
+    // request aimed at a corpse must be refused, and the corpse must stay dead. Note this asserts the
+    // refusal, not "the summon path is rez-free" - the meeting-stone/`SummonAction` path deliberately
+    // DOES resurrect a dead target so it can be summoned; driving that end-to-end needs an innkeeper
+    // or meeting stone in the world and is not expressible from this harness yet.
+    RegisterTest("teleport_summon_dead_refused", {
+        gmInvisible,
+        needAlive,
+        "monitor spawn alive => fail \"A refused summon resurrected the corpse\"",
+        "monitor time > 20 => pass \"Corpse stayed dead; the summon request was refused, not converted into a resurrect\"",
+        "teleport stormwind",
+        "spawn level=60 temporary=1 login=1",
+        "hide spawn",
+        "wait 5",
+        "teleport elwynn",
+        "kill spawn",
+        "summon request expect rejected",
+        "observe",
+        gmVisible
+    });
+
     // BL-17 - dead bot summoned across maps.
+    //
+    // No distance assertion here, unlike BL-16: the spawned target is a free-alt random bot, so
+    // RandomPlayerbotMgr keeps roaming it (random teleport / arena queue) and can move it on while
+    // the resurrect's far teleport is in flight. The core then applies the resurrect at wherever
+    // that teleport delivered the corpse (Player::ResurrectUsingRequestDataInit defers to a pending
+    // teleport), so the landing point is correct but not controllable. "Alive on the map our request
+    // named, still carrying that request" is still sound causality for the cross-map case: a spirit
+    // healer or self-resurrect cannot move a map-0 corpse onto map 1.
     RegisterTest("teleport_summon_dead_cross_map", {
         gmInvisible,
         needAlive,
-        "monitor spawn alive => pass \"Summoned corpse resurrected across maps\"",
+        "monitor spawn resurrected => pass \"Summoned corpse resurrected onto the summoner's map (cross map)\"",
         "monitor time > 120 => fail \"Timeout: summoned corpse was not resurrected (cross map)\"",
         "teleport stormwind",
         "spawn level=60 temporary=1 login=1",
+        "hide spawn",
         "wait 5",
         "teleport orgrimmar",
         "kill spawn",
@@ -431,6 +537,53 @@ void TestRegistry::RegisterTeleportTests()
         "spawn level=60 temporary=1 login=1 group=",
         "move spawn orgrimmar",
         "wait 5",
+        "observe"
+    });
+    // =========================================================================================
+    // BL-25 / BL-26 / BL-28 - a bot teleporting *other* bots must not run another map's work on its
+    // own thread. "teleport group" routes every member through PlayerbotAI::RunOnOwningThread, so a
+    // group split across maps exercises the world-thread hop (the case that used to abort inside
+    // WorldObject::GetMap()), while members already sharing the host's map take the inline path.
+    // =========================================================================================
+
+    // Cross-map group teleport. The group is formed first and the host only leaves afterwards:
+    // "mgroup" creates the members asynchronously, and the deferred join (RandomPlayerbotMgr's
+    // "create group" value, RandomPlayerbotMgr.cpp:909) is consumed on the tick it is first seen -
+    // so a host that teleports away while the members are still logging in loses the join silently
+    // (see BL-42).
+    //
+    // The pass condition pins map 1 (Kalimdor, where Orgrimmar is) so that it cannot be satisfied
+    // while the whole group still sits in Stormwind: without the pin, "group on map" is already true
+    // the moment the group forms. The first "teleport group" is same-map (the inline path); the
+    // second is cross-map (the world-thread hop this test exists for).
+    //
+    // Caveat (raised in review, and it is the important one): this asserts the *outcome* - every member
+    // was observed on the host's map during the observe window - and NOT that the hop delivered them.
+    // Members are roamed random bots, and MovementAction::MoveTo2/FlyDirect can teleport a bot to a far
+    // destination, so removing both cross-map "teleport group" lines would still pass this test once the
+    // members catch up. Do not cite it as the regression guard for the cross-map RunOnOwningThread hop
+    // until that is made causal (see BL-44).
+    //
+    // What the run does record: the visible summary line
+    // "[TestAction] teleport group: issued N to map M at (x, y, z); <member>(map..,inWorld..,tp..) ..."
+    // gives every member's map and state at issue time, and with LogLevel = 2 the per-member
+    // "teleport group: delivering ... -> moved=1" line confirms an actual delivery.
+    RegisterTest("teleport_group_cross_map", {
+        gmInvisible,
+        needAlive,
+        "monitor bot dead => abort \"Bot died, test interrupted\"",
+        "monitor group on map 1 => pass \"All group members crossed to the host's map\"",
+        "monitor time > 240 => fail \"Timeout: group never rejoined the host after the cross-map teleport\"",
+        "teleport stormwind",
+        "mgroup size=4",
+        "wait 60",
+        "teleport group",
+        "wait 5",
+        "teleport orgrimmar",
+        "wait 5",
+        "teleport group",
+        "wait 10",
+        "teleport group",
         "observe"
     });
 }
