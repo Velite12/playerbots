@@ -144,8 +144,33 @@ bool CastSpellAction::isUseful()
     if (ai->IsInVehicle() && !ai->IsInVehicle(false, false, true))
         return false;
 
-    if(!AI_VALUE2(bool, "spell cast useful", spellName))
-        return false;
+    if (!AI_VALUE2(bool, "spell cast useful", spellName))
+    {
+        bool useful = false;
+        NextAction** alternatives = getAlternatives();
+        // If there are alternatives, check if these are useful too.
+        if (alternatives)
+        {
+            for (int i=0; alternatives[i]; i++)
+            {
+                NextAction* nextAction = alternatives[i];
+                CastSpellAction* action = dynamic_cast<CastSpellAction*>(ai->GetAiObjectContext()->GetAction(nextAction->getName()));
+                if (action)
+                {
+                    if(!AI_VALUE2(bool, "spell cast useful", action->GetSpellName()))
+                        continue;
+                    else
+                    {
+                        SetSpellName(action->GetSpellName());
+                        useful = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!useful)
+            return false;
+    }
 
     Unit* spellTarget = GetTarget();
     if (!spellTarget)
