@@ -2805,7 +2805,12 @@ void MovementAction::WaitForReach(float distance)
     if (duration < 0.0f)
         duration = 0.0f;
 
-    SetDuration(duration);
+    // when fleeing, only wait gcd time to allow using instant casts
+    const bool fleeing = AI_VALUE(LastMovement&, "last movement").lastFlee && (time(0) - AI_VALUE(LastMovement&, "last movement").lastFlee) <= (sPlayerbotAIConfig.returnDelay / 1000);
+    if (fleeing)
+        SetDuration(sPlayerbotAIConfig.globalCoolDown);
+    else
+        SetDuration(duration);
 }
 
 void MovementAction::WaitForReach(const Movement::PointsArray& path)
@@ -2861,7 +2866,7 @@ bool MovementAction::Flee(Unit *target)
     {
         if ((now - lastFlee) <= fleeDelay)
         {
-            return true;
+            return false;
         }
     }
     

@@ -4814,7 +4814,21 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
         return CastPetSpell(spellId, target);
     }
 
-    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
+    const bool fleeing = AI_VALUE(LastMovement&, "last movement").lastFlee != 0;
+
+    if (!sServerFacade.IsInFront(bot, faceTo, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+    {
+        if (fleeing)
+            sServerFacade.SetFacingTo(bot, faceTo, true); // SetOrientation + heartbeat, do not stop
+        else
+        {
+            sServerFacade.SetFacingTo(bot, faceTo);
+            if (!HasRealPlayerMaster()) failWithDelay = true;
+        }
+    }
+
+    if (!aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee)
+        aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
     aiObjectContext->GetValue<time_t>("stay time")->Set(0);
 
     MotionMaster &mm = *bot->GetMotionMaster();
@@ -4933,18 +4947,11 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     // Fail the cast if the bot is moving and the spell is a casting/channeled spell
     if (sServerFacade.isMoving(bot) && ((GetSpellCastTime(pSpellInfo, bot, spell) > 0) || (IsChanneledSpell(pSpellInfo) && (GetSpellDuration(pSpellInfo) > 0))))
     {
-        // always fail when jumping
-        if (IsJumping() || bot->IsFalling())
+        const bool fleeing = aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee &&
+            (time(0) - aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee) <= (sPlayerbotAIConfig.returnDelay / 1000);
+        if (fleeing || IsJumping() || bot->IsFalling() || !HasActivePlayerMaster())
         {
-            spell->cancel();
-            return false;
-        }
 
-        StopMoving();
-
-        // fail if not with real player to avoid movement glitches
-        if (!HasActivePlayerMaster())
-        {
             if (waitForSpell)
             {
                 SetAIInternalUpdateDelay(sPlayerbotAIConfig.globalCoolDown);
@@ -4953,6 +4960,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
             spell->cancel();
             return false;
         }
+        StopMoving();
     }
 
     for (uint32 j = 0; j < MAX_EFFECT_INDEX; ++j)
@@ -5044,7 +5052,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
     if (!spellId)
         return false;
 
-    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
+    if (!aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee)
+        aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
     aiObjectContext->GetValue<time_t>("stay time")->Set(0);
 
     MotionMaster& mm = *bot->GetMotionMaster();
@@ -5133,18 +5142,11 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
     // Fail the cast if the bot is moving and the spell is a casting/channeled spell
     if (sServerFacade.isMoving(bot) && ((GetSpellCastTime(pSpellInfo, bot, spell) > 0) || (IsChanneledSpell(pSpellInfo) && (GetSpellDuration(pSpellInfo) > 0))))
     {
-        // always fail when jumping
-        if (IsJumping() || bot->IsFalling())
+        const bool fleeing = aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee &&
+            (time(0) - aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee) <= (sPlayerbotAIConfig.returnDelay / 1000);
+        if (fleeing || IsJumping() || bot->IsFalling() || !HasActivePlayerMaster())
         {
-            spell->cancel();
-            return false;
-        }
 
-        StopMoving();
-
-        // fail if not with real player to avoid movement glitches
-        if (!HasActivePlayerMaster())
-        {
             if (waitForSpell)
             {
                 SetAIInternalUpdateDelay(sPlayerbotAIConfig.globalCoolDown);
@@ -5153,6 +5155,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
             spell->cancel();
             return false;
         }
+        StopMoving();
     }
 
     SpellCastResult spellSuccess = spell->SpellStart(&targets);
@@ -5197,7 +5200,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
         return CastPetSpell(spellId, nullptr);
     }
 
-    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
+    if (!aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee)
+        aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
     aiObjectContext->GetValue<time_t>("stay time")->Set(0);
 
     MotionMaster& mm = *bot->GetMotionMaster();
@@ -5273,18 +5277,11 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     // Fail the cast if the bot is moving and the spell is a casting/channeled spell
     if (sServerFacade.isMoving(bot) && ((GetSpellCastTime(pSpellInfo, bot, spell) > 0) || (IsChanneledSpell(pSpellInfo) && (GetSpellDuration(pSpellInfo) > 0))))
     {
-        // always fail when jumping
-        if (IsJumping() || bot->IsFalling())
+        const bool fleeing = aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee &&
+            (time(0) - aiObjectContext->GetValue<LastMovement&>("last movement")->Get().lastFlee) <= (sPlayerbotAIConfig.returnDelay / 1000);
+        if (fleeing || IsJumping() || bot->IsFalling() || !HasActivePlayerMaster())
         {
-            spell->cancel();
-            return false;
-        }
 
-        StopMoving();
-
-        // fail if not with real player to avoid movement glitches
-        if (!HasActivePlayerMaster())
-        {
             if (waitForSpell)
             {
                 SetAIInternalUpdateDelay(sPlayerbotAIConfig.globalCoolDown);
@@ -5293,6 +5290,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
             spell->cancel();
             return false;
         }
+        StopMoving();
     }
 
     spell->SpellStart(&targets);
