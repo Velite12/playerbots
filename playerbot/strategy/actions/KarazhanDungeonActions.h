@@ -102,9 +102,8 @@ namespace ai
     {
     public:
         BigBadWolfMoveAwayAction(PlayerbotAI* ai) : MoveAwayFromCreature(ai, "move away from big bad wolf", 17521, 28.0f, true) {}
-
     };
-    
+
     class ShadeOfAranEnableFightStrategyAction : public ChangeAllStrategyAction
     {
     public:
