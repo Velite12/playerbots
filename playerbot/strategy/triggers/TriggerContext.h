@@ -344,6 +344,12 @@ namespace ai
             creators["end big bad wolf fight"] = [](PlayerbotAI* ai) { return new BigBadWolfEndFightTrigger(ai); };
             creators["big bad wolf too close"] = [](PlayerbotAI* ai) { return new BigBadWolfTooCloseTrigger(ai); };
 
+            creators["start shade of aran fight"] = [](PlayerbotAI* ai) { return new ShadeOfAranStartFightTrigger(ai); };
+            creators["end shade of aran fight"] = [](PlayerbotAI* ai) { return new ShadeOfAranEndFightTrigger(ai); };
+            creators["shade of aran casting arcane explosion"] = [](PlayerbotAI* ai) { return new ShadeOfAranCastingArcaneExplosionTrigger(ai); };
+            creators["shade of aran casting flame wreath"] = [](PlayerbotAI* ai) { return new ShadeOfAranCastingFlameWreathTrigger(ai); };
+            creators["flame wreath ended"] = [](PlayerbotAI* ai) { return new StayTimeTrigger(ai, 20000, "flame wreath ended"); };
+
             creators["start prince malchezaar fight"] = [](PlayerbotAI* ai) { return new PrinceMalchezaarStartFightTrigger(ai); };
             creators["end prince malchezaar fight"] = [](PlayerbotAI* ai) { return new PrinceMalchezaarEndFightTrigger(ai); };
             creators["netherspite infernal too close"] = [](PlayerbotAI* ai) { return new NetherspiteInfernalTooCloseTrigger(ai); };

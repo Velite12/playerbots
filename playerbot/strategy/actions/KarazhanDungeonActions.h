@@ -102,6 +102,25 @@ namespace ai
     {
     public:
         BigBadWolfMoveAwayAction(PlayerbotAI* ai) : MoveAwayFromCreature(ai, "move away from big bad wolf", 17521, 28.0f, true) {}
+
+    };
+    
+    class ShadeOfAranEnableFightStrategyAction : public ChangeAllStrategyAction
+    {
+    public:
+        ShadeOfAranEnableFightStrategyAction(PlayerbotAI* ai) : ChangeAllStrategyAction(ai, "enable shade of aran fight strategy", "+shade of aran") {}
+    };
+
+    class ShadeOfAranDisableFightStrategyAction : public ChangeAllStrategyAction
+    {
+    public:
+        ShadeOfAranDisableFightStrategyAction(PlayerbotAI* ai) : ChangeAllStrategyAction(ai, "disable shade of aran fight strategy", "-shade of aran") {}
+    };
+
+    class ShadeOfAranMoveAwayAction : public MoveAwayFromCreature
+    {
+    public:
+        ShadeOfAranMoveAwayAction(PlayerbotAI* ai) : MoveAwayFromCreature(ai, "move away from shade of aran", 16524, 22.0f, false, false) {}
     };
 
     class PrinceMalchezaarEnableFightStrategyAction : public ChangeAllStrategyAction

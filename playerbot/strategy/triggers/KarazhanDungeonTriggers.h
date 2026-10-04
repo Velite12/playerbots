@@ -90,6 +90,32 @@ namespace ai
 		}
 	};
 
+	class ShadeOfAranStartFightTrigger : public StartBossFightTrigger
+	{
+	public:
+		ShadeOfAranStartFightTrigger(PlayerbotAI* ai) : StartBossFightTrigger(ai, "start shade of aran fight", "shade of aran", 16524) {}
+	};
+
+	class ShadeOfAranEndFightTrigger : public EndBossFightTrigger
+	{
+	public:
+		ShadeOfAranEndFightTrigger(PlayerbotAI* ai) : EndBossFightTrigger(ai, "end shade of aran fight", "shade of aran", 16524) {}
+	};
+
+	class ShadeOfAranCastingArcaneExplosionTrigger : public Trigger
+	{
+	public:
+		ShadeOfAranCastingArcaneExplosionTrigger(PlayerbotAI* ai, int checkInteval = 1) : Trigger(ai, "shade of aran casting arcane explosion", checkInteval) {}
+		virtual bool IsActive() override;
+	};
+
+	class ShadeOfAranCastingFlameWreathTrigger : public Trigger
+	{
+	public:
+		ShadeOfAranCastingFlameWreathTrigger(PlayerbotAI* ai, int checkInteval = 1) : Trigger(ai, "shade of aran casting flame wreath", checkInteval) {}
+		virtual bool IsActive() override;
+	};
+
 	class PrinceMalchezaarStartFightTrigger : public StartBossFightTrigger
 	{
 	public:
