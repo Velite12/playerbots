@@ -408,8 +408,8 @@ namespace ai
             creators["disable big bad wolf fight strategy"] = [](PlayerbotAI* ai) { return new BigBadWolfDisableFightStrategyAction(ai); };
             creators["move away from big bad wolf"] = [](PlayerbotAI* ai) { return new BigBadWolfMoveAwayAction(ai); };
 
-            creators["enable shade of aran strategy"] = [](PlayerbotAI* ai) { return new ShadeOfAranEnableFightStrategyAction(ai); };
-            creators["disable shade of aran strategy"] = [](PlayerbotAI* ai) { return new ShadeOfAranDisableFightStrategyAction(ai); };
+            creators["enable shade of aran fight strategy"] = [](PlayerbotAI* ai) { return new ShadeOfAranEnableFightStrategyAction(ai); };
+            creators["disable shade of aran fight strategy"] = [](PlayerbotAI* ai) { return new ShadeOfAranDisableFightStrategyAction(ai); };
             creators["start flame wreath"] = [](PlayerbotAI* ai) { return new StayAction(ai); };
             creators["end flame wreath"] = [](PlayerbotAI* ai) { return new FollowAction(ai); };
             creators["move away from shade of aran"] = [](PlayerbotAI* ai) { return new ShadeOfAranMoveAwayAction(ai); };
