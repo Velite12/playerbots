@@ -33,18 +33,6 @@ namespace ai
         void InitDeadTriggers(std::list<TriggerNode*>& triggers) override;
     };
 
-    class BigBadWolfFightStrategy : public Strategy
-    {
-    public:
-        BigBadWolfFightStrategy(PlayerbotAI* ai) : Strategy(ai) {}
-        std::string getName() override { return "big bad wolf"; }
-
-    private:
-        void InitCombatTriggers(std::list<TriggerNode*>& triggers) override;
-        void InitNonCombatTriggers(std::list<TriggerNode*>& triggers) override;
-        void InitDeadTriggers(std::list<TriggerNode*>& triggers) override;
-    };
-
     class ShadeOfAranFightStrategy : public Strategy
     {
     public:
@@ -59,7 +47,6 @@ namespace ai
         void SetElementals(bool isOut) { elementalsOut = isOut; }
         bool GetElementals() { return elementalsOut; }
         std::string getName() override { return "shade of aran"; }
-
     private:
         ObjectGuid aranGuid;
         AranPhase currentPhase;
@@ -70,6 +57,17 @@ namespace ai
         void InitDeadTriggers(std::list<TriggerNode*>& triggers) override;
         void InitReactionTriggers(std::list<TriggerNode*> &triggers) override;
         void OnStrategyAdded(BotState state) override;
+    };
+  
+    class BigBadWolfFightStrategy : public Strategy
+    {
+    public:
+        BigBadWolfFightStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        std::string getName() override { return "big bad wolf"; }
+    private:
+        void InitCombatTriggers(std::list<TriggerNode*>& triggers) override;
+        void InitNonCombatTriggers(std::list<TriggerNode*>& triggers) override;
+        void InitDeadTriggers(std::list<TriggerNode*>& triggers) override;
     };
 
     class PrinceMalchezaarFightStrategy : public Strategy
